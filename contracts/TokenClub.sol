@@ -69,17 +69,19 @@ contract TokenClub is Initializable {
         return (spad.name, spad.description);
     }
 
-    function getSpadDetails(uint _spadId, string memory _password) public view returns (string memory spadName, string memory spadDescription, uint target, uint minInvestment, uint maxInvestment, uint currentInvestment, address externalToken, uint valuation, uint8 carry) {
+    function getSpadDetails(uint _spadId, string memory _password) public view returns (string memory spadName, string memory spadDescription, uint target, uint minInvestment, uint maxInvestment, uint currentInvestment, address externalToken, uint valuation, uint8 carry, bool targetClaimed) {
         Spad storage spad = spads[_spadId];
         if(spad.contributions[msg.sender] == 0 && creator != msg.sender) {
             require(compare(spad.password, _password), "invalid password");
         }
-        return (spad.name, spad.description, spad.target, spad.minInvestment, spad.maxInvestment, spad.currentInvestment, spad.externalToken, spad.valuation, spad.carry);
+        return (spad.name, spad.description, spad.target, spad.minInvestment, spad.maxInvestment, spad.currentInvestment, spad.externalToken, spad.valuation, spad.carry, spad.targetClaimed);
     }
 
     function contribute(uint _spadId, string memory _password, uint _amount) public {
         Spad storage spad = spads[_spadId];
-        require(compare(spad.password, _password), "invalid password");
+        if(spad.contributions[msg.sender] == 0 && creator != msg.sender) {
+            require(compare(spad.password, _password), "invalid password");
+        }
         require((spad.currentInvestment + _amount) <= spad.target, "target overflow");
         require((spad.contributions[msg.sender] + _amount) <= spad.maxInvestment, "investment overflow");
         require((spad.contributions[msg.sender] + _amount) >= spad.minInvestment, "investment underflow");
@@ -100,7 +102,7 @@ contract TokenClub is Initializable {
         require(spad.currentInvestment == spad.target, "target not reached");
         require(! spad.targetClaimed, "alreaddy claimed");
         require(IERC20(spad.externalToken).transferFrom(msg.sender, address(this), _tokenAmount), "invalid token amount");
-        require(IERC20(CURRENCY).transferFrom(address(this), msg.sender, spad.target), "target claim fail");
+        require(IERC20(CURRENCY).transfer(msg.sender, spad.target), "target claim fail");
         spad.externalTokenAmount = _tokenAmount;
         spad.targetClaimed = true;
     }
@@ -111,8 +113,13 @@ contract TokenClub is Initializable {
         require(spad.contributions[msg.sender] > 0, "not an investor");
         require(!spad.tokenClaimed[msg.sender], "already claimed");
         uint amount = (spad.contributions[msg.sender] * spad.externalTokenAmount * (100 - spad.carry) / spad.valuation / 100);
-        require(IERC20(spad.externalToken).transferFrom(address(this), msg.sender, amount), "transfer fail");
+        require(IERC20(spad.externalToken).transfer(msg.sender, amount), "transfer fail");
         spad.tokenClaimed[msg.sender] = true;
+    }
+
+    function isInvestmentClaimed(uint _spadId) public view returns (bool) {
+        Spad storage spad = spads[_spadId];
+        return spad.tokenClaimed[msg.sender];
     }
 
     function compare(string memory s1, string memory s2)
