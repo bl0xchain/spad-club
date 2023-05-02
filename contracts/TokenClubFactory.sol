@@ -7,7 +7,8 @@ import "./ITokenClub.sol";
 contract TokenClubFactory is ProxyFactory {
     address tokenClubTemplate;
     address[] public tokenClubs;
-    mapping(address => mapping(address => uint[])) contributors; // user -> tokenClub -> spad[]
+    mapping(address => address[]) userClubs;
+    mapping(address => mapping(address => uint[])) userSpads; // user -> tokenClub -> spad[]
 
     event TokenClubCreated(address creator, address tokenClub);
 
@@ -35,13 +36,15 @@ contract TokenClubFactory is ProxyFactory {
     function addContribution(address contributor, uint spadId) public {
         // only valid token club can call this function
         require(isValidTokenClub(msg.sender), "not allowed");
-        if(! exists(contributors[contributor][msg.sender], spadId)) {
-            contributors[contributor][msg.sender].push(spadId);
+        if(! spadExists(userSpads[contributor][msg.sender], spadId)) {
+            userSpads[contributor][msg.sender].push(spadId);
         }
-
+        if(! clubExists(userClubs[contributor], msg.sender)) {
+            userClubs[contributor].push(msg.sender);
+        }
     }
 
-    function exists(uint[] memory spadIds, uint spadId)
+    function spadExists(uint[] memory spadIds, uint spadId)
         internal
         pure
         returns (bool)
@@ -52,6 +55,27 @@ contract TokenClubFactory is ProxyFactory {
             }
         }
         return false;
+    }
+
+    function clubExists(address[] memory clubAddresses, address clubAddress)
+        internal
+        pure
+        returns (bool)
+    {
+        for (uint i = 0; i < clubAddresses.length; i++) {
+            if (clubAddresses[i] == clubAddress) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getClubs() public view returns (address[] memory) {
+        return userClubs[msg.sender];
+    }
+
+    function getSpads(address clubAddress) public view returns (uint[] memory) {
+        return userSpads[msg.sender][clubAddress];
     }
 }
 

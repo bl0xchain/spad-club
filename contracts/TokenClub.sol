@@ -29,7 +29,7 @@ contract TokenClub is Initializable {
         uint externalTokenAmount;
         uint valuation; // 10000
         uint8 carry; // 15%
-        bool targetClaimed;
+        bool externalTokenAdded;
         mapping(address => bool) tokenClaimed;
     }
 
@@ -69,12 +69,12 @@ contract TokenClub is Initializable {
         return (spad.name, spad.description);
     }
 
-    function getSpadDetails(uint _spadId, string memory _password) public view returns (string memory spadName, string memory spadDescription, uint target, uint minInvestment, uint maxInvestment, uint currentInvestment, address externalToken, uint valuation, uint8 carry, bool targetClaimed) {
+    function getSpadDetails(uint _spadId, string memory _password) public view returns (string memory spadName, string memory spadDescription, uint target, uint minInvestment, uint maxInvestment, uint currentInvestment, address externalToken, uint valuation, uint8 carry, bool externalTokenAdded) {
         Spad storage spad = spads[_spadId];
         if(spad.contributions[msg.sender] == 0 && creator != msg.sender) {
             require(compare(spad.password, _password), "invalid password");
         }
-        return (spad.name, spad.description, spad.target, spad.minInvestment, spad.maxInvestment, spad.currentInvestment, spad.externalToken, spad.valuation, spad.carry, spad.targetClaimed);
+        return (spad.name, spad.description, spad.target, spad.minInvestment, spad.maxInvestment, spad.currentInvestment, spad.externalToken, spad.valuation, spad.carry, spad.externalTokenAdded);
     }
 
     function contribute(uint _spadId, string memory _password, uint _amount) public {
@@ -89,6 +89,10 @@ contract TokenClub is Initializable {
         spad.currentInvestment = spad.currentInvestment + _amount;
         spad.contributions[msg.sender] = spad.contributions[msg.sender] + _amount;
         ITokenClubFactory(tokenClubFactory).addContribution(msg.sender, _spadId);
+        // on target reached, send target amount to the creator
+        if(spad.currentInvestment + _amount == spad.target) {
+            require(IERC20(CURRENCY).transfer(creator, spad.target), "target transfer fail");
+        }
     }
 
     function getContribution(uint _spadId) public view returns (uint amount) {
@@ -96,20 +100,20 @@ contract TokenClub is Initializable {
         return spad.contributions[msg.sender];
     }
 
-    function claimTarget(uint _spadId, uint _tokenAmount) public {
+    function addTokensForDistribution(uint _spadId, uint _tokenAmount) public {
         require(msg.sender == creator, "not allowed");
         Spad storage spad = spads[_spadId];
         require(spad.currentInvestment == spad.target, "target not reached");
-        require(! spad.targetClaimed, "alreaddy claimed");
-        require(IERC20(spad.externalToken).transferFrom(msg.sender, address(this), _tokenAmount), "invalid token amount");
-        require(IERC20(CURRENCY).transfer(msg.sender, spad.target), "target claim fail");
+        require(! spad.externalTokenAdded, "alreaddy added");
+        uint amount = _tokenAmount * spad.target * (100 - spad.carry) / (spad.valuation * 100);
+        require(IERC20(spad.externalToken).transferFrom(msg.sender, address(this), amount), "invalid token amount");
         spad.externalTokenAmount = _tokenAmount;
-        spad.targetClaimed = true;
+        spad.externalTokenAdded = true;
     }
 
     function claimInvestment(uint _spadId) public {
         Spad storage spad = spads[_spadId];
-        require(spad.targetClaimed, "target not claimed");
+        require(spad.externalTokenAdded, "external tokens not added");
         require(spad.contributions[msg.sender] > 0, "not an investor");
         require(!spad.tokenClaimed[msg.sender], "already claimed");
         uint amount = (spad.contributions[msg.sender] * spad.externalTokenAmount * (100 - spad.carry) / spad.valuation / 100);

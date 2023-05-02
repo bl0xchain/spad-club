@@ -9,7 +9,7 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, contractAbi.abi, signer);
 
 async function main() {
     console.log("Minting tokens...");
-    const tx = await contract.mint("0xa8da7eB9ED0629dE63cA5D7150a74e1AFbEfAac0", "1000000000000000000000000");
+    const tx = await contract.mint("0xFe2aA7B0aF149Df874A8923Cd09a694044E120ed", "1000000000000000000000000");
     await tx.wait();
     console.log("Tokens minted.");
 }
