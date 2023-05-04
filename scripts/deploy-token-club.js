@@ -9,4 +9,4 @@ async function main () {
   
   main();
 
-// Goerli TokenClub Address: 0xb2AFB2c40b07cc67D985E5575dDA1F274D7be635
+// Goerli TokenClub Address: 0xE963f725d80Ec176Bd764A330e8046f6A8ff786B
