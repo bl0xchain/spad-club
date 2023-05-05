@@ -3,10 +3,10 @@ pragma solidity >=0.8.11;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./ITokenClubFactory.sol";
+import "./ISpadClubFactory.sol";
 
-contract TokenClub is Initializable {
-    address tokenClubFactory;
+contract SpadClub is Initializable {
+    address spadClubFactory;
     address public creator;
     string public name;
     string public description;
@@ -36,7 +36,7 @@ contract TokenClub is Initializable {
     event SpadCreated(uint spadId);
 
     function initialize(address _creator, string memory _name, string memory _description) initializer public {
-        tokenClubFactory = msg.sender;
+        spadClubFactory = msg.sender;
         creator = _creator;
         name = _name;
         description = _description;
@@ -88,7 +88,7 @@ contract TokenClub is Initializable {
         require(IERC20(CURRENCY).transferFrom(msg.sender, address(this), _amount), "invalid amount");
         spad.currentInvestment = spad.currentInvestment + _amount;
         spad.contributions[msg.sender] = spad.contributions[msg.sender] + _amount;
-        ITokenClubFactory(tokenClubFactory).addContribution(msg.sender, _spadId);
+        ISpadClubFactory(spadClubFactory).addContribution(msg.sender, _spadId);
         // on target reached, send target amount to the creator
         if(spad.currentInvestment == spad.target) {
             require(IERC20(CURRENCY).transfer(creator, spad.target), "target transfer fail");

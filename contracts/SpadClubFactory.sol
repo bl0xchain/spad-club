@@ -2,31 +2,31 @@
 pragma solidity >=0.8.11;
 
 import "./ProxyFactory.sol";
-import "./ITokenClub.sol";
+import "./ISpadClub.sol";
 
-contract TokenClubFactory is ProxyFactory {
-    address tokenClubTemplate;
-    address[] public tokenClubs;
+contract SpadClubFactory is ProxyFactory {
+    address spadClubTemplate;
+    address[] public spadClubs;
     mapping(address => address[]) userClubs;
-    mapping(address => mapping(address => uint[])) userSpads; // user -> tokenClub -> spad[]
+    mapping(address => mapping(address => uint[])) userSpads; // user -> spadClub -> spad[]
 
-    event TokenClubCreated(address creator, address tokenClub);
+    event SpadClubCreated(address creator, address spadClub);
 
-    constructor(address _tokenClubTemplate) {
-        tokenClubTemplate = _tokenClubTemplate;
+    constructor(address _spadClubTemplate) {
+        spadClubTemplate = _spadClubTemplate;
     }
 
-    function createTokenClub(string memory _name, string memory _description) public {
-        bytes memory _data = abi.encodeCall(ITokenClub.initialize, (msg.sender, _name, _description)); 
-        address tokenClub = deployMinimal(tokenClubTemplate, _data);
-        tokenClubs.push(tokenClub);
+    function createSpadClub(string memory _name, string memory _description) public {
+        bytes memory _data = abi.encodeCall(ISpadClub.initialize, (msg.sender, _name, _description)); 
+        address spadClub = deployMinimal(spadClubTemplate, _data);
+        spadClubs.push(spadClub);
 
-        emit TokenClubCreated(msg.sender, tokenClub);
+        emit SpadClubCreated(msg.sender, spadClub);
     }
 
-    function isValidTokenClub(address _tokenClubAddress) public view returns (bool) {
-        for(uint i = 0; i < tokenClubs.length; i++) {
-            if(tokenClubs[i] == _tokenClubAddress) {
+    function isValidSpadClub(address _spadClubAddress) public view returns (bool) {
+        for(uint i = 0; i < spadClubs.length; i++) {
+            if(spadClubs[i] == _spadClubAddress) {
                 return true;
             }
         }
@@ -34,8 +34,8 @@ contract TokenClubFactory is ProxyFactory {
     }
 
     function addContribution(address contributor, uint spadId) public {
-        // only valid token club can call this function
-        require(isValidTokenClub(msg.sender), "not allowed");
+        // only valid spad club can call this function
+        require(isValidSpadClub(msg.sender), "not allowed");
         if(! spadExists(userSpads[contributor][msg.sender], spadId)) {
             userSpads[contributor][msg.sender].push(spadId);
         }
