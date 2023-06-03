@@ -14,7 +14,7 @@ contract SpadClub is Initializable {
     
     mapping(uint => Spad) spads;
 
-    address constant CURRENCY = 0xd9037B8A07Ec697014E8c94c52Cb41f67132B4a8;
+    address constant CURRENCY = 0x6e557F271447FD2aA420cbafCdCD66eCDD5A71A8;
 
     struct Spad {
         string name; // public
@@ -133,6 +133,5 @@ contract SpadClub is Initializable {
     {
         return keccak256(abi.encodePacked(s1)) == keccak256(abi.encodePacked(s2));
     }
-
 }
 

@@ -9,18 +9,20 @@ contract SpadClubFactory is ProxyFactory {
     address[] public spadClubs;
     mapping(address => address[]) userClubs;
     mapping(address => mapping(address => uint[])) userSpads; // user -> spadClub -> spad[]
+    mapping(address => address) public createdClub;
 
-    event SpadClubCreated(address creator, address spadClub);
+    event SpadClubCreated(address indexed creator, address spadClub);
 
     constructor(address _spadClubTemplate) {
         spadClubTemplate = _spadClubTemplate;
     }
 
     function createSpadClub(string memory _name, string memory _description) public {
+        require(createdClub[msg.sender] == address(0), "already created");
         bytes memory _data = abi.encodeCall(ISpadClub.initialize, (msg.sender, _name, _description)); 
         address spadClub = deployMinimal(spadClubTemplate, _data);
         spadClubs.push(spadClub);
-
+        createdClub[msg.sender] = spadClub;
         emit SpadClubCreated(msg.sender, spadClub);
     }
 

@@ -3,7 +3,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const CONTRACT_ADDRESS = "0x84D3B907F8e86BB23C1705f730E81856272b6091";
 const contractAbi = require("../artifacts/contracts/CustomToken.sol/CustomToken.json");
 
-const alchemyProvider = new ethers.providers.AlchemyProvider(network="goerli", API_KEY);
+const alchemyProvider = new ethers.providers.AlchemyProvider(network="arbitrum-goerli", API_KEY);
 const signer = new ethers.Wallet(PRIVATE_KEY, alchemyProvider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, contractAbi.abi, signer);
 
