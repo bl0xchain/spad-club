@@ -14,7 +14,7 @@ contract SpadClub is Initializable {
     
     mapping(uint => Spad) spads;
 
-    address constant CURRENCY = 0x6e557F271447FD2aA420cbafCdCD66eCDD5A71A8;
+    address constant CURRENCY = 0x9c94b31734027AE4c60A7C4cD3c2cF2A5e5e684e;
 
     struct Spad {
         string name; // public
@@ -83,11 +83,11 @@ contract SpadClub is Initializable {
             require(compare(spad.password, _password), "invalid password");
         }
         require((spad.currentInvestment + _amount) <= spad.target, "target overflow");
+        spad.currentInvestment = spad.currentInvestment + _amount;
         require((spad.contributions[msg.sender] + _amount) <= spad.maxInvestment, "investment overflow");
         require((spad.contributions[msg.sender] + _amount) >= spad.minInvestment, "investment underflow");
-        require(IERC20(CURRENCY).transferFrom(msg.sender, address(this), _amount), "invalid amount");
-        spad.currentInvestment = spad.currentInvestment + _amount;
         spad.contributions[msg.sender] = spad.contributions[msg.sender] + _amount;
+        require(IERC20(CURRENCY).transferFrom(msg.sender, address(this), _amount), "invalid amount");
         ISpadClubFactory(spadClubFactory).addContribution(msg.sender, _spadId);
         // on target reached, send target amount to the creator
         if(spad.currentInvestment == spad.target) {
@@ -105,10 +105,10 @@ contract SpadClub is Initializable {
         Spad storage spad = spads[_spadId];
         require(spad.currentInvestment == spad.target, "target not reached");
         require(! spad.externalTokenAdded, "alreaddy added");
-        uint amount = _tokenAmount * spad.target * (100 - spad.carry) / (spad.valuation * 100);
-        require(IERC20(spad.externalToken).transferFrom(msg.sender, address(this), amount), "invalid token amount");
-        spad.externalTokenAmount = _tokenAmount;
         spad.externalTokenAdded = true;
+        uint amount = _tokenAmount * spad.target * (100 - spad.carry) / (spad.valuation * 100);
+        spad.externalTokenAmount = _tokenAmount;
+        require(IERC20(spad.externalToken).transferFrom(msg.sender, address(this), amount), "invalid token amount");
     }
 
     function claimInvestment(uint _spadId) public {
@@ -116,10 +116,11 @@ contract SpadClub is Initializable {
         require(spad.externalTokenAdded, "external tokens not added");
         require(spad.contributions[msg.sender] > 0, "not an investor");
         require(!spad.tokenClaimed[msg.sender], "already claimed");
+        spad.tokenClaimed[msg.sender] = true;
         uint amount = (spad.contributions[msg.sender] * spad.externalTokenAmount * (100 - spad.carry) / spad.valuation / 100);
         require(IERC20(spad.externalToken).transfer(msg.sender, amount), "transfer fail");
-        spad.tokenClaimed[msg.sender] = true;
     }
+
 
     function isInvestmentClaimed(uint _spadId) public view returns (bool) {
         Spad storage spad = spads[_spadId];
